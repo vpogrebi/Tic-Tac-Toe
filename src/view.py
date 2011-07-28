@@ -4,10 +4,13 @@ By Toby de Havilland <toby.de.havilland@puremvc.org>
 Copyright(c) 2007-08 Toby de Havilland, Some rights reserved.
 """
 
+import wx
 import puremvc.interfaces
 import puremvc.patterns.mediator
 
-import model, enum, main, wx, vo
+import main
+import model
+import vo
 
 class DialogMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.IMediator):
 	

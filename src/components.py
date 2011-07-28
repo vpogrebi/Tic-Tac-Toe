@@ -1,6 +1,6 @@
 import wx
-import wx.grid
-import enum
+import wx.grid as gridlib
+#import enum
 
 class WxApp(wx.App):
 	
@@ -27,9 +27,6 @@ class AppFrame(wx.Frame):
 	
 class GameBoard(wx.Panel):
 	
-	evt_CLICK = wx.NewEventType()
-	EVT_CLICK = wx.PyEventBinder(evt_CLICK, 1)
-	
 	boardGrid = None
 	
 	def __init__(self,parent):
@@ -39,11 +36,11 @@ class GameBoard(wx.Panel):
 		vbox = wx.BoxSizer(wx.VERTICAL)
 		hboxBottom = wx.BoxSizer(wx.HORIZONTAL)
 		
-		self.boardGrid = wx.grid.Grid(self, -1, )
-		self.boardGrid.Bind(wx.grid.EVT_GRID_CELL_LEFT_CLICK, self.onClick)
+		self.boardGrid = gridlib.Grid(self, -1, )
 		self.boardGrid.CreateGrid(3, 3)
 		self.boardGrid.SetDefaultCellAlignment(wx.ALIGN_CENTER_HORIZONTAL, wx.ALIGN_CENTER_VERTICAL)
-		
+
+		self.boardGrid.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.onMoveMade)		
 		
 #		hboxBottom.Add(self.newBtn, 0, wx.RIGHT,10)
 #		hboxBottom.Add(self.deleteBtn, 0, wx.RIGHT,10)
@@ -59,12 +56,11 @@ class GameBoard(wx.Panel):
 	
 	def updateCell(self, row, col):
 		self.boardGrid.SetCellValue(row, col, "X")
-#		self.boardGrid.SetAttr(row, col, wx.grid.GridCellAttr())
 		
-	def onClick(self, evt):
+	def onMoveMade(self, evt):
 		try:
 			self.updateCell(evt.GetRow(), evt.GetCol())
-			self.GetEventHandler().ProcessEvent(wx.PyCommandEvent(self.evt_CLICK, self.GetId()))
+			evt.Skip()
 		except IndexError:
 			pass
 	

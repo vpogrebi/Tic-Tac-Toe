@@ -5,32 +5,32 @@ Copyright(c) 2007-08 Toby de Havilland, Some rights reserved.
 """
 
 import puremvc.patterns.proxy
-#import enum, vo, main
 
-class UserProxy(puremvc.patterns.proxy.Proxy):
+import vo
+import enum
+#import main
+
+class PlayerProxy(puremvc.patterns.proxy.Proxy):
 	
-	NAME = "UserProxy"
-	def __init__(self):
-		super(UserProxy, self).__init__(UserProxy.NAME, [])
-		self.data = []
-#		self.addItem(vo.UserVO('cstooge','Curly', 'Stooge', "curly@stooges.com", 'xyz987',enum.DEPT_SALES))
-#		self.addItem(vo.UserVO('mstooge','Moe', 'Stooge', "moe@stooges.com", 'abc123',enum.DEPT_PLANT))
+	NAME = "PlayerProxy"
+	def __init__(self, userMarker):
+		super(PlayerProxy, self).__init__(PlayerProxy.NAME, [])
+		self.players = []
+		self.addPlayer(vo.PlayerVO(enum.PLAYER_USER, userMarker))
+		for marker in enum.MarkerTypes:
+			if marker is not userMarker:
+				self.addPlayer(vo.PlayerVO(enum.PLAYER_AUTO, marker))
+				break
+			
+	def addPlayer(self, player):
+		self.players.append(player)
 
-#	def getUsers(self):
-#		return self.data
-#   
-#	def addItem(self, item):
-#		self.data.append(item)
-#
-#	def updateItem(self, user):
-#		for i in range(0,len(self.data)):
-#			if self.data[i].username == user.username:
-#				self.data[i] = user
-#
-#	def deleteItem(self, user):
-#		for i in range(0,len(self.data)):
-#			if self.data[i].username == user.username:
-#				del self.data[i]
+	def nextPlayer(self, player):
+		for member in self.players:
+			if member is not player:
+				return member
+			
+		
 
 class RoleProxy(puremvc.patterns.proxy.Proxy):
 
