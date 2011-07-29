@@ -50,8 +50,24 @@ class GameBoard(wx.Panel):
 		
 		self.boardGrid = gridlib.Grid(self, -1, )
 		self.boardGrid.CreateGrid(3, 3)
+
+		self.boardGrid.SetColSize(0, 50)
+		self.boardGrid.SetColSize(1, 50)
+		self.boardGrid.SetColSize(2, 50)
+		self.boardGrid.SetRowSize(0, 50)
+		self.boardGrid.SetRowSize(1, 50)
+		self.boardGrid.SetRowSize(2, 50)
+
+		self.boardGrid.SetColLabelSize(0)
+		self.boardGrid.SetRowLabelSize(0)
+				
+		for row in range(self.boardGrid.GetNumberRows()):
+			for col in range(self.boardGrid.GetNumberCols()):
+				self.boardGrid.SetCellAlignment(row, col, wx.ALIGN_CENTRE, wx.ALIGN_CENTRE)
+				self.boardGrid.SetCellBackgroundColour(row, col, wx.CYAN)
+				self.boardGrid.SetCellFont(row, col, wx.Font(30, wx.ROMAN, wx.NORMAL, wx.BOLD))
+		
 		self.boardGrid.Disable()
-		self.boardGrid.SetDefaultCellAlignment(wx.ALIGN_CENTER_HORIZONTAL, wx.ALIGN_CENTER_VERTICAL)
 		self.boardGrid.Bind(gridlib.EVT_GRID_CELL_LEFT_CLICK, self.onCellSelect)		
 		
 		self.ctrlBtn = wx.Button(self, -1, "Start Game", size=(100,-1))
