@@ -11,14 +11,8 @@ import controller
 class AppFacade(puremvc.patterns.facade.Facade):
 	
 	STARTUP			= "startup"
-	START_GAME		= "startGame"
-	STOP_GAME		= "stopGame"
-	END_GAME		= "endGame"
 	ROLE_SELECTED	= "roleSelected"
 
-	SELECTION_MADE	= "selectionMade"
-	SHOW_DIALOG		= "showDialog"
-	
 	def __init__(self):
 		self.initializeFacade()
 		

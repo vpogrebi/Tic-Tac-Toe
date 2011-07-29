@@ -21,13 +21,13 @@ class DialogMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.IMed
 
 	def listNotificationInterests(self):
 		return [
-		main.AppFacade.SHOW_DIALOG,
+#		main.AppFacade.SHOW_DIALOG,
 		]
 
 	def handleNotification(self, note): 
 		noteName = note.getName()
 		if noteName == main.AppFacade.SHOW_DIALOG:
-			dlg = wx.MessageDialog(self.viewComponent, note.getBody(),'Alert',style=wx.OK|wx.ICON_EXCLAMATION)
+			dlg = wx.MessageDialog(self.viewComponent, note.getBody(), 'Alert',style=wx.OK|wx.ICON_EXCLAMATION)
 			result = dlg.ShowModal()
 			dlg.Destroy()
 
@@ -39,12 +39,13 @@ class GameBoardMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.I
 	
 	def __init__(self, viewComponent):
 		super(GameBoardMediator, self).__init__(GameBoardMediator.NAME, viewComponent)
-		self.userProxy = self.facade.retrieveProxy(model.UserProxy.NAME)		
-		self.viewComponent.Bind(self.viewComponent.EVT_CLICK, self.onClick)
+		self.playerProxy = self.facade.retrieveProxy(model.PlayerProxy.NAME)
+		self.viewComponent._setPlayerProxy(self.playerProxy)	
 
 	def listNotificationInterests(self):
 		return [
-			main.AppFacade.START_GAME,
+#			main.AppFacade.START_GAME,
+#			main.AppFacade.STOP_GAME,
 		]
 
 	def handleNotification(self, note): 
