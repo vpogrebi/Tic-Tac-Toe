@@ -28,23 +28,32 @@ class AppFrame(wx.Frame):
 	
 class GameBoard(wx.Panel):
 	
-	evt_START_GAME = wx.NewEventType()
-	EVT_START_GAME = wx.PyEventBinder(evt_START_GAME, 1)
-	
-	evt_STOP_GAME = wx.NewEventType()
-	EVT_STOP_GAME = wx.PyEventBinder(evt_STOP_GAME, 1)
+	# Game started - player clicked 'Start Game'
+	evt_GAME_START	= wx.NewEventType()		
+	EVT_GAME_START = wx.PyEventBinder(evt_GAME_START, 1)
+		
+	# Game stopped - player clicked 'Stop Game'
+	evt_GAME_STOP	= wx.NewEventType()		
+	EVT_GAME_STOP = wx.PyEventBinder(evt_GAME_STOP, 1)
+
+	# Game over - one player wins
+	evt_GAME_OVER = wx.NewEventType()
+	EVT_GAME_OVER = wx.PyEventBinder(evt_GAME_OVER, 1)
+		
+	# Player made a move
+	evt_MOVE_MADE = wx.NewEventType()
+	EVT_MOVE_MADE = wx.PyEventBinder(evt_MOVE_MADE, 1)
 
 	boardGrid = None
 	ctrlBtn = None
-	makerRbox = None
+	radioRoles = None
 	
-	playerProxy = None
-
 	def __init__(self, parent):
 		wx.Panel.__init__(self, parent, id = 2, size = (330, 330))
-		self.markerSelectionList = ['X', 'O']
-		self.markersSet = False
-
+		self._roleList = ['X', 'O']
+		self._data = None	# Underlying representation data - is set by the view (GameBoardMediator)
+		self._player = None	# Interactive player
+		
 		vbox = wx.BoxSizer(wx.VERTICAL)
 		hboxBottom = wx.BoxSizer(wx.HORIZONTAL)
 		
@@ -73,14 +82,13 @@ class GameBoard(wx.Panel):
 		self.ctrlBtn = wx.Button(self, -1, "Start Game", size=(100,-1))
 		self.ctrlBtn.Bind(wx.EVT_BUTTON, self.onStartGame)
 		
-		self.markerSelectionRbox = wx.RadioBox(self, -1, "Marker Selection", wx.DefaultPosition, 
-									wx.DefaultSize, self.markerSelectionList, 2, wx.RA_SPECIFY_COLS)
-		self.markerSelectionRbox.Bind(wx.EVT_RADIOBOX, self.onMarkerSelection)
-		self.markerSelectionRbox.SetToolTip(wx.ToolTip("Select 'X' or 'O'"))
+		self.radioRoles = wx.RadioBox(self, -1, "Role Selection", wx.DefaultPosition, 
+									wx.DefaultSize, self._roleList, 2, wx.RA_SPECIFY_COLS)
+		self.radioRoles.SetToolTip(wx.ToolTip("Select 'X' or 'O'"))
 
 		hboxBottom.Add(self.ctrlBtn, 0, wx.RIGHT,10)
 
-		vbox.Add(self.markerSelectionRbox, 0, wx.ALL|wx.ALIGN_CENTER, 10)
+		vbox.Add(self.radioRoles, 0, wx.ALL|wx.ALIGN_CENTER, 10)
 		vbox.Add(self.boardGrid, 0, wx.ALL|wx.ALIGN_CENTER, 10)
 		vbox.Add(hboxBottom, 0, wx.TOP|wx.BOTTOM|wx.RIGHT|wx.ALIGN_RIGHT,10)
 
@@ -88,42 +96,61 @@ class GameBoard(wx.Panel):
 		self.SetSizer(vbox)
 		self.Layout()
 		
-	def _setPlayerProxy(self, playerProxy):
-		self.playerProxy = playerProxy
+	def initialize(self, player, data):
+		"Initialize private data"
+		self._data = data
+		self._player = player
 		
-	def onMarkerSelection(self, evt = None):
-		if evt:
-			self.playerProxy.setMarkers(self.markerSelectionList[evt.GetInt()])
-		else:
-			self.playerProxy.setMarkers(self.markerSelectionList[self.markerSelectionRbox.Selection])
-			
-		self.markersSet = True
+	def getRole(self):
+		"Obtain current role selection"
+		role = self._roleList[self.radioRoles.GetSelection()]
+		return role
 		
 	def onStartGame(self, evt):
-		if not self.markersSet:
-			self.onMarkerSelection()
-			
+		# Prepare (clear) game board (grid only - not the data!)
 		self.boardGrid.ClearGrid()
-		self.markerSelectionRbox.Disable()
+		# Assume that player picked the role - disable radio box 
+		self.radioRoles.Disable()
+		# Enable board grid
 		self.boardGrid.Enable()
+		# Update ctrlBtn to say 'Stop Game'
 		self.ctrlBtn.SetLabel("Stop Game")
+		# Reassign event binding associated with the ctrlBtn
 		self.ctrlBtn.Bind(wx.EVT_BUTTON, self.onStopGame)
-	
+		# Notify the view that game has started
+		self.GetEventHandler().ProcessEvent(wx.PyCommandEvent(self.evt_GAME_START, self.GetId()))
+		
 	def onStopGame(self, evt):
 		self.boardGrid.Disable()
-		self.markerSelectionRbox.Enable()
+		self.radioRoles.Enable()
 		self.ctrlBtn.SetLabel("Start Game")
 		self.ctrlBtn.Bind(wx.EVT_BUTTON, self.onStartGame)
+		if evt:
+			# Notify the view that game has been stopped
+			self.GetEventHandler().ProcessEvent(wx.PyCommandEvent(self.evt_GAME_STOP, self.GetId()))
 	
-	def updateBoard(self, data):
-		for row in data:
-			for col in data[row]:
-				self.boardGrid.SetCellValue(row, col, data[row][col])
+	def updateCell(self, row, col, value):
+		self.boardGrid.SetCellValue(row, col, value)
+		
+#	def updateBoard(self):
+#		self.boardGrid.ClearGrid()
+#		
+#		for row in self.data:
+#			for col in self.data[row]:
+#				self.boardGrid.SetCellValue(row, col, self.data[row][col])
 		
 	def onCellSelect(self, evt):		
-		try:
-			self.boardGrid.SetCellValue(evt.GetRow(), evt.GetCol(), self.playerProxy.getPlayer().marker)
+		if not self._player.moveAllowed:
 			evt.Skip()
-		except IndexError:
-			pass
-	
+		else:
+			row = evt.GetRow()
+			col = evt.GetCol()
+			if not self._data[row][col]:
+				self._data[row][col] = self._player.role
+				# Update grid cell
+				self.boardGrid.SetCellValue(row, col, self._player.role)
+				# Notify the view that the player made move
+				self.GetEventHandler().ProcessEvent(wx.PyCommandEvent(self.evt_MOVE_MADE, self.GetId()))
+			evt.Skip()
+			
+		

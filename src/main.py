@@ -10,8 +10,16 @@ import controller
 
 class AppFacade(puremvc.patterns.facade.Facade):
 	
-	STARTUP			= "startup"
-	ROLE_SELECTED	= "roleSelected"
+	STARTUP			= "startup"			# Application startup
+	GAME_ON			= "gameOn"			# Player clicked "Start Game"
+	GAME_OVER		= "gameOver"		# Signals end of game (one player wins)
+	GAME_STOPPED	= "gameStopped"		# Signals end of game (player clicked "Stop Game")
+	DATA_UPDATED	= "dataUpdated"		# Game board's data updated
+	
+	UPDATE_GAME_BOARD	= "updateBoard"	# Update game board (grid)
+	UPDATE_GAME_DATA	= "updateData"	# Update game's data
+	SHOW_DIALOG       	= "showDialog"	# Show dialog
+	
 
 	def __init__(self):
 		self.initializeFacade()

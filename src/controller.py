@@ -14,6 +14,8 @@ import puremvc.interfaces
 class StartupCommand(puremvc.patterns.command.SimpleCommand, puremvc.interfaces.ICommand):
 	def execute(self, note):
 		mainPanel = note.getBody()
-		self.facade.registerProxy(model.PlayerProxy())		
+		self.facade.registerProxy(model.PlayerProxy())	
+		self.facade.registerProxy(model.GameDataProxy(mainPanel.gameBoard))
 		self.facade.registerMediator(view.DialogMediator(mainPanel))
 		self.facade.registerMediator(view.GameBoardMediator(mainPanel.gameBoard))
+
