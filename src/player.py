@@ -1,38 +1,40 @@
 import enum
 
 class Player(object):
-    type = None
-    role = None
-    
-    def __init__(self):
+    def __init__(self, type = None, role = None):
         self.type = None
         self.role = None
         self.moveAllowed = False
-        _isAuto = False
+        if type:
+            self._setType(type)
+        if role:
+            self._setRole(role)
         
     def _setRole(self, role):
+        if not role in enum.RoleTypes:
+            raise Exception, "Invalid role selection"
         self.role = role 
     
     def _setType(self, type):
+        if not type in enum.PlayerTypes:
+            raise Exception, "Invalid player type"
         self.type = type
         
     def isAuto(self):
-        return self._isAuto
+        return self.type is enum.PLAYER_AUTO
         
-    def allowTurn(self):
-        self.moveAllowed = True
+    def allowTurn(self, status):
+        self.moveAllowed = status
         
-class PlayerUser(Player):
-    def __init__(self):
-        super(PlayerUser, self).__init__()
-        self.type = enum.PLAYER_USER
-        self._isAuto = False
-        
-class PlayerAuto(Player):
-    def __init__(self):
-        super(PlayerAuto, self).__init__()
-        self.type = enum.PLAYER_AUTO
-        self._isAuto = True
-        
-    def takeTurn(self, data):
-        return (0, 0)
+#class PlayerUser(Player):
+#    def __init__(self):
+#        super(PlayerUser, self).__init__()
+#        self.type = enum.PLAYER_USER
+#        self._isAuto = False
+#        
+#class PlayerAuto(Player):
+#    def __init__(self):
+#        super(PlayerAuto, self).__init__()
+#        self.type = enum.PLAYER_AUTO
+#        self._isAuto = True
+#        

@@ -22,13 +22,18 @@ class DialogMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.IMed
 
 	def listNotificationInterests(self):
 		return [
-			main.AppFacade.SHOW_DIALOG,
+			main.AppFacade.SHOW_GAME_OVER,
+			main.AppFacade.SHOW_GAME_DRAW,
 		]
 
 	def handleNotification(self, note): 
 		noteName = note.getName()
-		if noteName == main.AppFacade.SHOW_DIALOG:
-			dlg = wx.MessageDialog(self.viewComponent, note.getBody(), 'Alert',style=wx.OK|wx.ICON_EXCLAMATION)
+		if noteName == main.AppFacade.SHOW_GAME_OVER:
+			dlg = wx.MessageDialog(self.viewComponent, note.getBody(), 'GAME OVER', style = wx.OK)
+			result = dlg.ShowModal()
+			dlg.Destroy()
+		if noteName == main.AppFacade.SHOW_GAME_DRAW:
+			dlg = wx.MessageDialog(self.viewComponent, note.getBody(), 'DRAW', style = wx.OK)
 			result = dlg.ShowModal()
 			dlg.Destroy()
 
@@ -50,31 +55,35 @@ class GameBoardMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.I
 
 	def listNotificationInterests(self):
 		return [
-#			main.AppFacade.GAME_ON,
 			main.AppFacade.GAME_OVER,
-#			main.AppFacade.GAME_STOPPED,
+			main.AppFacade.GAME_DRAW,
 			main.AppFacade.DATA_UPDATED,
+			main.AppFacade.AUTO_MOVE_MADE,
 		]
 
 	def handleNotification(self, note): 
 		noteName = note.getName()
 		if noteName == main.AppFacade.DATA_UPDATED:
 			(row, col, value) = note.getBody()
-			self.gameDataProxy.updateData(row, col, value)
 			self.viewComponent.updateCell(row, col, value)
+		elif noteName == main.AppFacade.AUTO_MOVE_MADE:
+			(row, col, value) = note.getBody()
+			self.gameDataProxy.updateData(row, col, value)
 			self.onPlayerMoved(None)
 		elif noteName == main.AppFacade.GAME_OVER:
 			winner = note.getBody()
-			self.onGameOver(winner)
-			
+			self.onGameOver(winner)	
+		elif noteName == main.AppFacade.GAME_DRAW:
+			self.onGameDraw()	
 			
 	def onGameStart(self, evt):
 		# Signal GameDataProxy to initialize game's data
-		self.gameDataProxy.initialize()
-		self.playerProxy.initialize(self.viewComponent.getRole(), self.gameDataProxy.getData())
-		self.viewComponent.initialize(self.playerProxy.getUser(), self.gameDataProxy.getData())
-#		self.viewComponent._setData(self.gameDataProxy.getData())
-#		self.viewComponent._setPlayer(self.playerProxy.getUser())
+		playerRole = self.viewComponent.getRole()
+		self.gameDataProxy.initialize(playerRole)   
+		# Signal PlayerProxy to initialize players
+		self.playerProxy.initialize(playerRole)
+		# Signal GameBoard (GUI) to initialize game bord controls
+		self.viewComponent.initialize(playerRole)
 		# Signal PlayerProxy to have next player take turn
 		self.playerProxy.nextTurn()
 	
@@ -82,12 +91,23 @@ class GameBoardMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.I
 		self.viewComponent.onStopGame(None)
 	
 	def onGameOver(self, winner):
-		self.sendNotification(main.AppFacade.SHOW_DIALOG, "GAME OVER!\n'%s' IS A WINNER" % winner)
+		self.playerProxy.stopGame()
+		self.sendNotification(main.AppFacade.SHOW_GAME_OVER, "'%s' IS A WINNER" % winner)
+		self.onGameStop(None)
+	
+	def onGameDraw(self):
+		self.playerProxy.stopGame()
+		self.sendNotification(main.AppFacade.SHOW_GAME_DRAW, "WE HAVE A DRAW")
 		self.onGameStop(None)
 	
 	def onPlayerMoved(self, evt):
-		# Check if player that made this move - is a winner
-		self.gameDataProxy.checkWin(self.playerProxy.currPlayer.role)
+		if evt:
+			(row, col, value) = self.viewComponent._lastSelection
+			self.gameDataProxy.updateData(row, col, value)
+		elif self.playerProxy.gameEnabled:
+			self.viewComponent.boardGrid.Enable()
+
+		self.playerProxy.disableCurrentPlayer()
 		# Signal next player to take turn
 		self.playerProxy.nextTurn()		
 		

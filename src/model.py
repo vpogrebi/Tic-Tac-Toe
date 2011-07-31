@@ -3,6 +3,7 @@ import puremvc.patterns.proxy
 import main
 import enum
 import player
+import assistant
 
 class PlayerProxy(puremvc.patterns.proxy.Proxy):	
 	NAME = "PlayerProxy"
@@ -15,7 +16,8 @@ class PlayerProxy(puremvc.patterns.proxy.Proxy):
 		self.playerX = None		# 'X' player
 		self.playerO = None		# 'O' player
 		self.currPlayer = None	# Player who is currently taking turn
-		self._data = None		# Game data (maintained by GameDataProxy)
+		self._dataProxy = None	# Game's data proxy
+		self.gameEnabled = True	# Flag indicating whether or not game can go on
 		
 	def _assignRoles(self, userRole):
 		"Assign player roles in the game"
@@ -33,52 +35,53 @@ class PlayerProxy(puremvc.patterns.proxy.Proxy):
 	def _setQueue(self):
 		self.queue = [self.playerX, self.playerO]
 		
-	def initialize(self, userRole, gameData):
+	def initialize(self, playerRole):
 		"Initialize players. Should be called when game is started"
-		# Set private game data
-		self._data = gameData
+		self.gameEnabled = True
+		# Set game's data proxy reference
+		self._dataProxy = self.facade.retrieveProxy(GameDataProxy.NAME)
 		
 		# Add two players to self.players list
-		self._userPlayer = player.PlayerUser()
-		self._autoPlayer = player.PlayerAuto()
+		self._userPlayer = player.Player(enum.PLAYER_USER)
+		self._autoPlayer = player.Player(enum.PLAYER_AUTO)
 		self.players = [self._userPlayer, self._autoPlayer]	
 		
 		# Assign player roles
-		self._assignRoles(userRole)
+		self._assignRoles(playerRole)
 		# Set player queue
 		self._setQueue()
 		
-	def getUser(self):
-		user = None
-		for pl in self.players:
-			if pl.type == 'user':
-				user = pl
-				break
-			
-		return user
-	
+	def stopGame(self):
+		self.gameEnabled = False
+		
+	def startGame(self):
+		self.gameEnabled = True
+		
 	def nextTurn(self):
 		"Signal next player in the queue to take turn"
-		# Get first player in the queue
-		self.currPlayer = self.queue.pop(0)
-		self.currPlayer.allowTurn()
-		if self.currPlayer.isAuto():
-			# Signal player to take turn
-			(row, col) = self.currPlayer.takeTurn(self._data)
-			# Send notification that game's data is updated
-			self.sendNotification(main.AppFacade.DATA_UPDATED, (row, col, self.currPlayer.role))
-		# Add player to the end of the queue
-		self.queue.append(self.currPlayer)
+		if self.gameEnabled:
+			# Get first player in the queue
+			self.currPlayer = self.queue.pop(0)
+			self.currPlayer.allowTurn(True)
+			# Add player to the end of the queue
+			self.queue.append(self.currPlayer)
+	
+			if self.currPlayer.isAuto():
+				# Signal player to take turn
+				(row, col) = self._dataProxy.suggestMove()
+				# Send notification that Auto player made move
+				self.sendNotification(main.AppFacade.AUTO_MOVE_MADE, (row, col, self.currPlayer.role))
+			
+	def disableCurrentPlayer(self):
+		self.currPlayer.allowTurn(False)
 			
 class GameDataProxy(puremvc.patterns.proxy.Proxy):
 	NAME = "GameDataProxy"
 	data = []
-	gameBoard = None
+	moveAssistant = None
 	
 	def __init__(self, gameBoard):
 		super(GameDataProxy, self).__init__(GameDataProxy.NAME, [])		
-		self.gameBoard = gameBoard	# GameBoardGrid - GUI panel
-		self.initialize()	# Initialize game's board data
 		self.winCombos = [	# Winning combinations (this data does not change)
 							[0, 1, 2],
 							[3, 4, 5],
@@ -89,31 +92,52 @@ class GameDataProxy(puremvc.patterns.proxy.Proxy):
 							[0, 4, 8],
 							[2, 4, 6],							
 						]
+		self.assistant = assistant.Assistant(self.winCombos)
 		
-	def initialize(self):
+	def initialize(self, playerRole):
 		"Initialize game's board data. initData() must be called each time new game starts"
+		role = None
 		self.data = [
 						[None, None, None],
 						[None, None, None],
 						[None, None, None],
 					]
+		if playerRole is enum.MARKER_O:
+			role = enum.MARKER_X
+		else:
+			role = enum.MARKER_O
 		
+		self.assistant.setRoles(role)
+				
 	def getData(self):
+		"Return copy of the private data"
 		return self.data
 		
 	def updateData(self, row, col, value):
 		self.data[row][col] = value
+		# Send notification that game's data is updated
+		self.sendNotification(main.AppFacade.DATA_UPDATED, (row, col, value))
+		# Check if we have a winner
+		if not self.checkWin():
+			# Check if we have a draw
+			if self.assistant._getAvail(self.data) == []:
+				self.sendNotification(main.AppFacade.GAME_DRAW)
 		
-	def checkWin(self, role):
-		for combo in self.winCombos:
-			cnt = 0
-			for item in combo:
-				row = item / 3
-				col = item % 3
-				if self.data[row][col] == role:
-					cnt += 1
-					
-			if cnt == 3:
-				self.sendNotification(main.AppFacade.GAME_OVER, role)
-				break
+	def checkWin(self):
+		"Check if any player has won"
+
+		for value in enum.RoleTypes:
+			for combo in self.winCombos:
+				cnt = 0
+				for item in combo:
+					row = item / 3
+					col = item % 3
+					if self.data[row][col] == value:
+						cnt += 1
+						
+				if cnt == 3:
+					self.sendNotification(main.AppFacade.GAME_OVER, value)
+					return True
 			
+	def suggestMove(self):
+		return self.assistant.suggestMove(self.data)

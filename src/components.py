@@ -52,7 +52,8 @@ class GameBoard(wx.Panel):
 		wx.Panel.__init__(self, parent, id = 2, size = (330, 330))
 		self._roleList = ['X', 'O']
 		self._data = None	# Underlying representation data - is set by the view (GameBoardMediator)
-		self._player = None	# Interactive player
+		self._playerRole = None	# Interactive player's role ('X' or 'O')
+		self._lastSelection = None	# This private attribute will contain a (row, col, value) trio - last player's selection
 		
 		vbox = wx.BoxSizer(wx.VERTICAL)
 		hboxBottom = wx.BoxSizer(wx.HORIZONTAL)
@@ -96,10 +97,9 @@ class GameBoard(wx.Panel):
 		self.SetSizer(vbox)
 		self.Layout()
 		
-	def initialize(self, player, data):
+	def initialize(self, role):
 		"Initialize private data"
-		self._data = data
-		self._player = player
+		self._playerRole = role
 		
 	def getRole(self):
 		"Obtain current role selection"
@@ -132,25 +132,18 @@ class GameBoard(wx.Panel):
 	def updateCell(self, row, col, value):
 		self.boardGrid.SetCellValue(row, col, value)
 		
-#	def updateBoard(self):
-#		self.boardGrid.ClearGrid()
-#		
-#		for row in self.data:
-#			for col in self.data[row]:
-#				self.boardGrid.SetCellValue(row, col, self.data[row][col])
-		
 	def onCellSelect(self, evt):		
-		if not self._player.moveAllowed:
-			evt.Skip()
-		else:
-			row = evt.GetRow()
-			col = evt.GetCol()
-			if not self._data[row][col]:
-				self._data[row][col] = self._player.role
-				# Update grid cell
-				self.boardGrid.SetCellValue(row, col, self._player.role)
-				# Notify the view that the player made move
-				self.GetEventHandler().ProcessEvent(wx.PyCommandEvent(self.evt_MOVE_MADE, self.GetId()))
-			evt.Skip()
+		row = evt.GetRow()
+		col = evt.GetCol()
+		if not self.boardGrid.GetCellValue(row, col):
+			self._lastSelection = (row, col, self._playerRole)
+			# Update grid cell
+			self.boardGrid.SetCellValue(row, col, self._playerRole)
+			# Disable game board so interactive player can not take turn until auto player completes his turn
+			self.boardGrid.Disable()
+			# Notify the view that the player made move
+			self.GetEventHandler().ProcessEvent(wx.PyCommandEvent(self.evt_MOVE_MADE, self.GetId()))
+			
+		evt.Skip()
 			
 		
