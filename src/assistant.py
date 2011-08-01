@@ -1,7 +1,6 @@
 import time
 import enum
 import random
-from aifc import data
 
 Empty = ' '
 Player_X = 'x'
