@@ -1,11 +1,54 @@
-Intructions:
-1. Fork this repo on GitHub
-2. Create a program that can interactively play the game of Tic-Tac-Toe against a human player and never lose.
-3. Commit early and often, with good messages.
-4. Push your code back to GitHub and send me a pull request.
+This is Valeriy Pogrebitskiy's TIC-TAC-TOE game implementation
 
-If you don't want to broadcast your intentions by forking this, feel free to clone it and work locally. Then, send us a tar.gz of your solution, including your .git folder so we can see your commit history.
+In this project, I have attempted to provide a (very primitive) front-end (GUI)
+implementation of the game board - in addition to implementing auto-player's 
+computational logic.
 
-We are a Django shop, but it is not a requirement that you implement your program as a Django app.
+Front-end GUI is implemented using two open source Python frameworks:
+	- "pureMVC" - provides a very nice and easy to use implementation of MODEL-VIEW_CONTROLLER design pattern
+	- "wxPython" - provides implementation of GUI widgets and controls (used within 'components.py' and 'view.py')
+	
+This project uses pureMVC framework's unsurpassed event generation and handling capabilities - to marshal 
+GUI components of the game.
 
-(Don't be offended when I don't actually pull. I will clone your repo and inspect it locally when I receive the request. This repo will be left solution-less for obvious reasons.)
+Back-end (computational logic) is concentrated in "assistant.py" module ('Assistant' class).
+This class implements four different decision strategies (though I decided to use only three)
+that assist in making best move decision. Assistant.suggestMove() executes these strategies
+in a certain order (defined in Assistant.strategyList list) - so that quick and most obvious
+strategies execute first, leaving more complex one(s) for later execution.
+
+These strategies are:
+	- _firstMove() - returns CENTER position if board is empty. This is done based on my personal 
+		experience that selecting center of the board gives better chance for winning
+	- _immediateWinLose() - checks if there is an immediate win/lose opportunity, and 
+		returns position that either results in the immediate win, or prevents immediate loss
+	- _minMax() - MinMax algorithm implementation. This is sort-of "brute-force" algorithm that
+		computes all possible auto player moves and tries to analyze (using recursion) which
+		move has better "score" (better opportunity to win). This is the most complex strategy 
+		of all, and is left to execute last
+	- _randomChoice() - pick random move among all available moves. I used this strategy BEFORE
+		_minMax() was implemented. After implementing _monMax(), I no longer see the need to use
+		this strategy at all (but left it in the code)
+		
+
+IMPORTANT
+---------
+
+Please notice that since it took me much longer to implement this game than I initially 
+anticipated - I have not done some of the things that I would normally do on all my projects:
+
+	1. I have not provided unittest coverage for GUI portion of this project. The only unittest
+		currently implemented - is "assistant_test.py" which tests computational logic ("assistant.py").
+		And even within this test script, I have omitted some of the things...
+	2. I have not provided good comments and API documentation. Normally, I add good comments 
+		(and a lot of them) in my code, as well as supply documentation strings that are used to
+		generate complete project's API documentation. In fact, I usually generate two different
+		documentation sets for my projects: using "Epydoc" and "pydoctor" (developed by 'Twisted' 
+		framework's team). I personally like "pydoctor" more...
+	3. GUI could be improved - both in terms of presentation and behavior. As I mentioned above,
+		my goal was to provide the most simplistic GUI that works, not the best possible one. 
+		Please do not pay attention to this poor implementation
+		
+I consider myself being very good both with unittest'ing (I am fluent using both Mocks and Stubs), 
+and with documentation. Please take my word for it.
+

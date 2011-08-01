@@ -1,181 +1,116 @@
-import time
 import enum
 import random
 
-Empty = ' '
-Player_X = 'x'
-Player_O = 'o'
-
-def allEqual(list):
-    """returns True if all the elements in a list are equal, or if the list is empty."""
-    return not list or list == [list[0]] * len(list)
-
-def computerPlayer(board, player):
-    """Function for the computer player"""
-    t0 = time.time()
-    opponent = { Player_O : Player_X, Player_X : Player_O }
-
-    def judge(winner):
-        if winner == player:
+class Assistant(object):
+    """Assistant - is a helper class developed to assist application's model
+    (model.GameBoardProxy) in suggesting an automated move. It is
+    instantiated by GameBoardProxy.initialize() method. Four strategies are
+    defined that assist in computing auto-player's move (though one strategy
+    is no longer used).
+    
+    suggestMove() - is the only "public" method defined by this class. 
+    It is being called from model.GameBoardProxy.suggestMove() method
+    """
+    board = None
+    
+    def __init__(self, boardProxy, player):
+        self.board = boardProxy        
+        self.player = player
+        
+        self.strategyList = [
+                             self._firstMove, 
+                             self._immediateWinLose, 
+                             self._minMax,
+#                             self._randomChoice
+                            ]
+        
+    def _judge(self, winner):
+        """Assign 'score' based on whether current player 
+        (self.player) is winner, loser or neither"""
+        if winner == self.player:
             return +1
-        if winner == None:
+        if winner is None:
             return 0
         return -1
 
-    def evaluateMove(self, move, p=player):
+    def _evaluateMove(self, move, player):
+        """Evaluate given move made by a given player.
+        This is a recursive procedure - it evaluates given move based on
+        outcomes of all possible subsequent outcomes (moves) of both players
+        """
+        row = move[0]
+        col = move[1]
+        
         try:
-            board.makeMove(move, p)
-            if board.gameOver():
-                return judge(board.winner())
-            outcomes = (evaluateMove(next_move, opponent[p]) for next_move in board.getValidMoves())
-            if p == player:
-                #return min(outcomes)
+            self.board.updateData(row, col, player, updateBoard = False, sendNotifications = False)
+            if self.board.gameOver(False):
+                return self._judge(self.board.winner)
+            # Recursively, obtain a "score" - a value of a given move
+            outcomes = (self._evaluateMove(next_move, enum.opponent[player]) for next_move in self.board.getValidMoves())
+            if player == self.player:
+                # return min(outcomes)
                 min_element = 1
                 for o in outcomes:
                     if o == -1:
                         return o
-                    min_element = min(o,min_element)
+                    min_element = min(o, min_element)
                 return min_element
             else:
-                #return max(outcomes)
+                # return max(outcomes)
                 max_element = -1
-                for o in outcomes:
-                    if o == +1:
-                        return o
-                    max_element = max(o,max_element)
+                for outcome in outcomes:
+                    if outcome == +1:
+                        return outcome
+                    max_element = max(outcome, max_element)
                 return max_element
         finally:
-            board.undoMove(move)
-
-    moves = [(move, evaluateMove(move)) for move in board.getValidMoves()]
-    random.shuffle(moves)
-    moves.sort(key = lambda (move, winner): winner)
-#    board.makeMove(moves[-1][0], player)
-    return(moves[-1][0])
-
-
-class Assistant(object):
-    def __init__(self, winCombos):
-        self.winCombos = winCombos        
-        self.myRole = None
-        self.otherRole = None
-        
-        self.centerRow  = 1
-        self.centerCol  = 1
-        self.blankBoard = [[None, None, None],
-                           [None, None, None],
-                           [None, None, None]]
-
-        self.checkList = [self._firstMove, 
-                          self._immediateCoice, 
-#                          self._complexChoice, 
-                          self._centerChoice, 
-                          self._randomChoice]
-        
-    def _isBlank(self, data):
-        return data == self.blankBoard
+            self.board.undoMove(row, col)
     
-    def _getAvail(self, data):
-        return([(row, col) for row in range(len(data))
-                            for col in range(len(data[row]))
-                            if data[row][col] is None])
+    def _firstMove(self):
+        "Consider that center - is always best first move"
+        if self.board.isBlank():
+            return (self.board.center, None)
+        else:
+            raise Exception, "Game board is not blank"
         
-    def _countForCombo(self, data, combo, value):
-        cnt = 0
-        for item in combo:
-            row = item / 3
-            col = item % 3
-            if data[row][col] == value:
-                cnt += 1
-        
-        return cnt
-    
-    def _firstMove(self, data):
-        if self._isBlank(data):
-            return (self.centerRow, self.centerCol)
-        
-    def _immediateCoice(self, data):
-        for value in (self.myRole, self.otherRole):
-            for combo in self.winCombos:
-                cnt = self._countForCombo(data, combo, value)
+    def _immediateWinLose(self):
+        "Checks if we can detect immediate win/lose opportunity"
+        for value in (self.player, enum.opponent[self.player]):
+            for combo in self.board.getWinCombos():
+                cnt = self.board.cntForCombo(combo, value)
                 if cnt == 2:
                     for item in combo:
                         row = item / 3
                         col = item % 3
-                        if not data[row][col]:
+                        if not self.board.data[row][col]:
                             # We found item that will either give us a win, or protect from loss
-                            return (row, col)
+                            return ((row, col), None)
                         
-        return None
+        raise Exception, "No immediate win/loss opportunity"
     
-    def _miniMax(self, data):
-        move = computerPlayer(board, player)
+    def _minMax(self):
+        """A MinMax algorithm implementation - a sort-of 'brute force' computation algorithm
+        that evaluates every possible move (for both players) and tries to select the best choice
+        based on the all possible outcomes
+        """
+        # Obtain a list of all possible (move, score) pairs
+        moves = [(move, self._evaluateMove(move, self.player)) for move in self.board.getValidMoves()]
+        # Randomly shuffle results
+        random.shuffle(moves)
+        # Sort results in reverse score order
+        moves.sort(key = lambda (move, score): score)
+        # Return first best move
+        return(moves[-1][0], moves)
     
-
-    
-    def _centerChoice(self, data):
-        if not data[self.centerRow][self.centerCol]:
-            return (self.centerRow, self.centerCol)
-        
     def _randomChoice(self, data):
-        avail = self._getAvail(data)
-        return avail[random.randrange(len(avail))]
+        "Obtain a random move from the list of all possible available moves"
+        avail = self.board.getValidMoves()
+        return (avail[random.randrange(len(avail))], None)
     
-    def setRoles(self, role):
-        self.myRole = role
-        if role is enum.MARKER_O:
-            self.otherRole = enum.MARKER_X
-        else:
-            self.otherRole = enum.MARKER_O
-            
-    def suggestMove(self, data):
-        for check in self.checkList:
-            pos = check(data)
-            if pos:
-                return pos
-
-class TestBoard(object):
-    """This class represents a tic tac toe board state."""
-    def __init__(self, data):
-        """Initialize all members."""
-        for row in data:
-            for col in data[row]:
-                if not data[row][col]:
-                    piece = Empty
-                elif data[row][col] == enum.MARKER_X:
-                    piece = Player_X
-                else:
-                    piece = Player_O
-                self.pieces[row * 3 + col] = piece
-        
-        self.field_names = '123456789'
-
-    def winner(self):
-        """Determine if one player has won the game. Returns Player_X, Player_O or None"""
-        winning_rows = [[0,1,2],[3,4,5],[6,7,8], # vertical
-                        [0,3,6],[1,4,7],[2,5,8], # horizontal
-                        [0,4,8],[2,4,6]]         # diagonal
-        for row in winning_rows:
-            if self.pieces[row[0]] != Empty and allEqual([self.pieces[i] for i in row]):
-                return self.pieces[row[0]]
-
-    def getValidMoves(self):
-        """Returns a list of valid moves. A move can be passed to getMoveName to 
-        retrieve a human-readable name or to makeMove/undoMove to play it."""
-        return [pos for pos in range(9) if self.pieces[pos] == Empty]
-
-    def gameOver(self):
-        """Returns true if one player has won or if there are no valid moves left."""
-        return self.winner() or not self.getValidMoves()
-
-    def getMoveName(self, move):
-        """Returns a human-readable name for a move"""
-        return self.field_names[move]
-    
-    def makeMove(self, move, player):
-        """Plays a move. Note: this doesn't check if the move is legal!"""
-        self.pieces[move] = player
-    
-    def undoMove(self, move):
-        """Undoes a move/removes a piece of the board."""
-        self.makeMove(move, Empty)
+    def suggestMove(self):
+        for strategy in self.strategyList:
+            try:
+                (move, other) = strategy()
+                return move
+            except:
+                pass

@@ -1,9 +1,10 @@
 import wx
 import wx.grid as gridlib
 
-import main
-import model
-import enum
+"""
+This module defines application's main GUI components - which are 'enwrapped'
+in GameBoard panel. wxPython framework is used for implementing GUI controls
+"""
 
 class WxApp(wx.App):
 	
@@ -12,8 +13,6 @@ class WxApp(wx.App):
 	def OnInit(self):
 		self.appFrame = AppFrame()
 		self.appFrame.Show()
-		#self.SetTopWindow(self.frame)
-		
 		return True
 
 class AppFrame(wx.Frame):
@@ -27,6 +26,7 @@ class AppFrame(wx.Frame):
 #		self.userForm = UserForm(self)
 	
 class GameBoard(wx.Panel):
+	"""Application's main control - game board itself (GUI)"""
 	
 	# Game started - player clicked 'Start Game'
 	evt_GAME_START	= wx.NewEventType()		
@@ -107,6 +107,7 @@ class GameBoard(wx.Panel):
 		return role
 		
 	def onStartGame(self, evt):
+		"Initialize game panel for a new game"
 		# Prepare (clear) game board (grid only - not the data!)
 		self.boardGrid.ClearGrid()
 		# Assume that player picked the role - disable radio box 
@@ -121,6 +122,7 @@ class GameBoard(wx.Panel):
 		self.GetEventHandler().ProcessEvent(wx.PyCommandEvent(self.evt_GAME_START, self.GetId()))
 		
 	def onStopGame(self, evt):
+		"End the game - prepare GUI controls for the next game"
 		self.boardGrid.Disable()
 		self.radioRoles.Enable()
 		self.ctrlBtn.SetLabel("Start Game")
@@ -130,9 +132,11 @@ class GameBoard(wx.Panel):
 			self.GetEventHandler().ProcessEvent(wx.PyCommandEvent(self.evt_GAME_STOP, self.GetId()))
 	
 	def updateCell(self, row, col, value):
+		"Update game board's cell"
 		self.boardGrid.SetCellValue(row, col, value)
 		
-	def onCellSelect(self, evt):		
+	def onCellSelect(self, evt):
+		"What to do upon interactive player's move"		
 		row = evt.GetRow()
 		col = evt.GetCol()
 		if not self.boardGrid.GetCellValue(row, col):

@@ -1,19 +1,12 @@
-"""
-PureMVC Python Demo - wxPython Employee Admin 
-By Toby de Havilland <toby.de.havilland@puremvc.org>
-Copyright(c) 2007-08 Toby de Havilland, Some rights reserved.
-"""
-
 import wx
 import puremvc.interfaces
 import puremvc.patterns.mediator
 
 import main
 import model
-import enum
-import vo
 
 class DialogMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.IMediator):
+	"Defines 'GAME OVER' and 'DRAW' MessageDialog notification handlers"
 	
 	NAME = 'DialogMediator'
 	
@@ -38,46 +31,49 @@ class DialogMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.IMed
 			dlg.Destroy()
 
 class GameBoardMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.IMediator):
-	
+	"""Main application's 'view' mediator. Provides a link and controls interaction 
+	between between application's proxies	(PlayerProxy and GameBoardProxy) and its
+	view component (GUI). Also handles AppFacade's notifications.
+	"""
 	NAME = 'GameBoardMediator'
 	
 	playerProxy = None
 	
 	def __init__(self, viewComponent):
+		"Obtain handlers to view components (proxies), and register events"
 		super(GameBoardMediator, self).__init__(GameBoardMediator.NAME, viewComponent)
-		# Get PlayerProxy and GameDataProxy references (handlers)
+		# Get PlayerProxy and GameBoardProxy references (handlers)
 		self.playerProxy = self.facade.retrieveProxy(model.PlayerProxy.NAME)
-		self.gameDataProxy = self.facade.retrieveProxy(model.GameDataProxy.NAME)
+		self.gameDataProxy = self.facade.retrieveProxy(model.GameBoardProxy.NAME)
 
 		self.viewComponent.Bind(self.viewComponent.EVT_GAME_START, self.onGameStart)
 		self.viewComponent.Bind(self.viewComponent.EVT_GAME_STOP, self.onGameStop)
 		self.viewComponent.Bind(self.viewComponent.EVT_MOVE_MADE, self.onPlayerMoved)
 
 	def listNotificationInterests(self):
+		"Subscribe to notifications"
 		return [
 			main.AppFacade.GAME_OVER,
 			main.AppFacade.GAME_DRAW,
-			main.AppFacade.DATA_UPDATED,
 			main.AppFacade.AUTO_MOVE_MADE,
 		]
 
-	def handleNotification(self, note): 
+	def handleNotification(self, note):
+		"Notification handler. Handles GAME_OVER, GAME_DRAW and AUTO_MOVE_MADE notifications"
 		noteName = note.getName()
-		if noteName == main.AppFacade.DATA_UPDATED:
-			(row, col, value) = note.getBody()
-			self.viewComponent.updateCell(row, col, value)
-		elif noteName == main.AppFacade.AUTO_MOVE_MADE:
+		if noteName == main.AppFacade.AUTO_MOVE_MADE:
 			(row, col, value) = note.getBody()
 			self.gameDataProxy.updateData(row, col, value)
 			self.onPlayerMoved(None)
-		elif noteName == main.AppFacade.GAME_OVER:
+		if noteName == main.AppFacade.GAME_OVER:
 			winner = note.getBody()
 			self.onGameOver(winner)	
 		elif noteName == main.AppFacade.GAME_DRAW:
 			self.onGameDraw()	
 			
 	def onGameStart(self, evt):
-		# Signal GameDataProxy to initialize game's data
+		"Initialize view controls and proxies for the new game"
+		# Signal GameBoardProxy to initialize game's data
 		playerRole = self.viewComponent.getRole()
 		self.gameDataProxy.initialize(playerRole)   
 		# Signal PlayerProxy to initialize players
@@ -88,25 +84,32 @@ class GameBoardMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.I
 		self.playerProxy.nextTurn()
 	
 	def onGameStop(self, evt):
+		"Signal view component to stop the game"
 		self.viewComponent.onStopGame(None)
 	
 	def onGameOver(self, winner):
+		"Game is over - someone won"
 		self.playerProxy.stopGame()
 		self.sendNotification(main.AppFacade.SHOW_GAME_OVER, "'%s' IS A WINNER" % winner)
 		self.onGameStop(None)
 	
 	def onGameDraw(self):
+		"Game is over - there is a DRAW"
 		self.playerProxy.stopGame()
 		self.sendNotification(main.AppFacade.SHOW_GAME_DRAW, "WE HAVE A DRAW")
 		self.onGameStop(None)
 	
 	def onPlayerMoved(self, evt):
+		"Actions to take upon either player's move"
 		if evt:
+			# Interactive player made his move - signal game board proxy to update its data
 			(row, col, value) = self.viewComponent._lastSelection
-			self.gameDataProxy.updateData(row, col, value)
+			self.gameDataProxy.updateData(row, col, value, updateBoard = False)
 		elif self.playerProxy.gameEnabled:
+			# Auto player made his move - enable game board so interactive player can take his turn
 			self.viewComponent.boardGrid.Enable()
 
+		# Disable current player - so same player can not take turn again
 		self.playerProxy.disableCurrentPlayer()
 		# Signal next player to take turn
 		self.playerProxy.nextTurn()		

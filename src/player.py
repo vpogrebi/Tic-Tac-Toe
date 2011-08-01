@@ -1,6 +1,7 @@
 import enum
 
 class Player(object):
+    "Implements player's functionality"
     def __init__(self, type = None, role = None):
         self.type = None
         self.role = None
@@ -26,15 +27,3 @@ class Player(object):
     def allowTurn(self, status):
         self.moveAllowed = status
         
-#class PlayerUser(Player):
-#    def __init__(self):
-#        super(PlayerUser, self).__init__()
-#        self.type = enum.PLAYER_USER
-#        self._isAuto = False
-#        
-#class PlayerAuto(Player):
-#    def __init__(self):
-#        super(PlayerAuto, self).__init__()
-#        self.type = enum.PLAYER_AUTO
-#        self._isAuto = True
-#        

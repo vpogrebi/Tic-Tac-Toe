@@ -1,8 +1,10 @@
 PLAYER_AUTO = 'auto'
 PLAYER_USER = 'user'
 
-MARKER_X    = 'X'
-MARKER_O    = 'O'
+PLAYER_X    = 'X'
+PLAYER_O    = 'O'
 
 PlayerTypes = [PLAYER_AUTO, PLAYER_USER]
-RoleTypes = [MARKER_X, MARKER_O]
+RoleTypes = [PLAYER_X, PLAYER_O]
+
+opponent = { PLAYER_X : PLAYER_O, PLAYER_O: PLAYER_X }
