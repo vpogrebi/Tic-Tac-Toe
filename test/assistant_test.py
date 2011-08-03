@@ -76,22 +76,13 @@ class AssistantTest(unittest.TestCase):
 
     def test__minMax(self):
         "Test that Assistant._minMax() returns best possible move"
-        (suggestedMove, allMoves) = self.assistant._minMax()
+        (suggestedMove, scores) = self.assistant._minMax()
         # 1. Check that ALL possible moves were evaluated
-        self.assertEquals(len(allMoves), 9)
+        self.assertEquals(len(scores), 9)
         # 2. Check that suggested move is among best moves
-        maxScore = None
-        bestMoves = []
-        for (move, score) in allMoves:
-            if score > maxScore:
-                maxScore = score
-                bestMoves = [move]
-            elif score == maxScore:
-                bestMoves.append(move)
-                
+        bestMoves = scores[max(scores.keys())]
         self.assertTrue(suggestedMove in bestMoves)
         
                 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
