@@ -30,6 +30,15 @@ These strategies are:
 		_minMax() was implemented. After implementing _monMax(), I no longer see the need to use
 		this strategy at all (but left it in the code)
 		
+NOTICE
+------
+I recognized that my first implementation of MiniMax algorithm (assistant._minMax()) was not
+not summing up scores of all potential moves that might arise from a given move (the one that
+is being evaluated). In essence, it was "equaling" moves that have different overall potentials,
+resulting in poor move selection.
+
+I have improved this implementation - by summing up individual outcomes (scores) for each move, 
+and suggesting the move that has highest TOTAL score		
 
 IMPORTANT
 ---------
