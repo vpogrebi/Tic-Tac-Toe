@@ -159,6 +159,7 @@ class GameBoardProxy(puremvc.patterns.proxy.Proxy):
 	def undoMove(self, row, col):
 		"Undo a move. This method is used by the assistant to undo its 'simulation' moves"
 		self.data[row][col] = None
+		self.winner = None
 		
 	def gameOver(self, sendNotification = True):
 		"Check if any player has won"
