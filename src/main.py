@@ -14,8 +14,8 @@ class AppFacade(puremvc.patterns.facade.Facade):
 	GAME_OVER		= "gameOver"		# Signals a WIN
 	GAME_DRAW		= "gameDraw"		# Signals a DRAW
 	AUTO_MOVE_MADE	= "autoMoveMade"	# Auto player made his move
-	SHOW_GAME_OVER	= "dialodGameOver"	# Show GAME OVER dialog
-	SHOW_GAME_DRAW	= "dialodGameDraw"	# Show DRAW dialog
+	SHOW_GAME_OVER	= "dialogGameOver"	# Show GAME OVER dialog
+	SHOW_GAME_DRAW	= "dialogGameDraw"	# Show DRAW dialog
 	
 	def __init__(self):
 		self.initializeFacade()
