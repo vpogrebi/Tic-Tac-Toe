@@ -1,9 +1,6 @@
 import enum
 import random
 
-cnt1 = 0
-cnt2 = 0
-
 class Assistant(object):
     """Assistant - is a helper class developed to assist application's model
     (model.GameBoardProxy) in suggesting an automated move. It is
