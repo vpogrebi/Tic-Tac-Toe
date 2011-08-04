@@ -17,10 +17,10 @@ class Assistant(object):
     board = None
     
     def __init__(self, boardProxy, player):
-        self.board = boardProxy        
-        self.player = player
-        self.scores = {}        
-        self.strategyList = [
+        self.board = boardProxy # Game board proxy (manages game's data and contains methods used in this module)    
+        self.player = player    # Auto-player's instance
+        self.scores = {}        # Dictionary used to assist self._maxiMin() (MaxiMin or MiniMax algorithm implementation) in suggesting best moves
+        self.strategyList = [   # List of strategies in the order they are evaluated
                              self._firstMove, 
                              self._immediateWinLose,
                              self._maxiMin, 
@@ -37,8 +37,8 @@ class Assistant(object):
             score = -1
         return score
 
-    def _maximizedMove(self):
-        ''' Find maximized move'''
+    def _maximizedMove(self, depth = 0):
+        "Find maximized move"
             
         bestscore = None
         bestmove = None
@@ -46,13 +46,19 @@ class Assistant(object):
         for move in self.board.getValidMoves():
             (row, col) = move
             self.board.updateData(row, col, self.player, updateBoard = False, sendNotifications = False)
+
+            if depth == 0:
+                self.currMove = move    # Save our current move
+                self.scores[self.currMove] = {'score': None, 'totScore': 0}
             
             if self.board.gameOver(False):
                 score = self._getScore()
+                # Add current score to the self.scores[self.currMove]['totScore'] value
+                self.scores[self.currMove]['totScore'] += score
             else:
-                next_move, score = self._minimizedMove()
+                (next_move, score) = self._minimizedMove(depth + 1)
        
-            self.scores[move] = score
+            self.scores[self.currMove]['score'] = score
             self.board.undoMove(row, col)
            
             if bestscore == None or score > bestscore:
@@ -61,8 +67,8 @@ class Assistant(object):
 
         return bestmove, bestscore
     
-    def _minimizedMove(self):
-        ''' Find the minimized move'''
+    def _minimizedMove(self, depth):
+        "Find the minimized move"
 
         bestscore = None
         bestmove = None
@@ -73,8 +79,10 @@ class Assistant(object):
 
             if self.board.gameOver(False):
                 score = self._getScore()
+                # Add current score to the self.scores[self.currMove]['totScore'] value
+                self.scores[self.currMove]['totScore'] += score
             else:
-                next_move, score = self._maximizedMove()
+                (next_move, score) = self._maximizedMove(depth + 1)
        
             self.board.undoMove(row, col)
            
@@ -109,7 +117,16 @@ class Assistant(object):
     def _maxiMin(self):
         self.scores = {}
         (bestMove, bestScore) = self._maximizedMove()
-        return bestMove
+        # Obtain a list of auto-player's moves that have best score
+        bestMoves = [move for move in self.scores.keys() if self.scores[move]['score'] == bestScore]
+        # Find highest TOTAL score among these moves
+        highestTotScore = max([self.scores[move]['totScore'] for move in bestMoves])
+        # Obtain a list of moves that have total score equal to <highestTotScore> (these moves would have highest probability of NOT LOSING)
+        best_bestMoves = [move for move in bestMoves if self.scores[move]['totScore'] == highestTotScore]
+        # Randomly shuffle this list if it has more than one item - to get different results to make game more interesting
+        if len(best_bestMoves) > 1:
+            random.shuffle(best_bestMoves)
+        return best_bestMoves[0]
     
     def _randomChoice(self, data):
         "Obtain a random move from the list of all possible available moves"

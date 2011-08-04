@@ -35,20 +35,6 @@ class AssistantTest(unittest.TestCase):
         self.boardProxy.winner = None
         self.assertEquals(0, self.assistant._getScore())
         
-    def test__maximizedMove_RESTORES_BOARD(self):
-        "Test that Assistant._maximizedMove() does not modify game board's data"
-        dataBefore = copy.deepcopy(self.boardProxy.data)
-        (move, score) = self.assistant._maximizedMove()
-        dataAfter = self.boardProxy.data
-        self.assertEquals(dataBefore, dataAfter)
-        
-    def test__minimizedMove_RESTORES_BOARD(self):
-        "Test that Assistant._minimizedMove() does not modify game board's data"
-        dataBefore = copy.deepcopy(self.boardProxy.data)
-        (move, score) = self.assistant._minimizedMove()
-        dataAfter = self.boardProxy.data
-        self.assertEquals(dataBefore, dataAfter)
-        
     def test__firstMove_BOARD_IS_BLANK(self):
         "Test that Assistant._firstMove() returns center position when board is blank"
         # Our initial test setup sets game board to a blank state
@@ -76,12 +62,16 @@ class AssistantTest(unittest.TestCase):
 
     def test__maxiMin(self):
         "Test that Assistant._maxiMin() returns best possible move"
+        dataBefore = copy.deepcopy(self.boardProxy.data)
         bestMove = self.assistant._maxiMin()
-        # 1. Check that ALL possible moves were evaluated
+        dataAfter = self.boardProxy.data
+        # 1 . Check that _maxiMin() does not modify game board's data
+        self.assertEquals(dataBefore, dataAfter)
+        # 2. Check that ALL possible moves were evaluated
         self.assertEquals(len(self.assistant.scores), 9)
-        # 2. Check that suggested move has highest score
-        maxScore = max(self.assistant.scores.values())
-        self.assertTrue(maxScore, self.assistant.scores[bestMove])
+        # 3. Check that suggested move has highest TOTAL score
+        bestScore = max([self.assistant.scores[move]['totScore'] for move in self.assistant.scores.keys()])
+        self.assertTrue(bestScore, self.assistant.scores[bestMove]['totScore'])
         
                 
 if __name__ == "__main__":
