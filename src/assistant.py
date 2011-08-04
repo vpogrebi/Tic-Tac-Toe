@@ -1,6 +1,9 @@
 import enum
 import random
 
+cnt1 = 0
+cnt2 = 0
+
 class Assistant(object):
     """Assistant - is a helper class developed to assist application's model
     (model.GameBoardProxy) in suggesting an automated move. It is
@@ -16,60 +19,75 @@ class Assistant(object):
     def __init__(self, boardProxy, player):
         self.board = boardProxy        
         self.player = player
-        
+        self.scores = {}        
         self.strategyList = [
                              self._firstMove, 
-                             self._immediateWinLose, 
-                             self._minMax,
+                             self._immediateWinLose,
+                             self._maxiMin, 
 #                             self._randomChoice
                             ]
         
-    def _judge(self, winner):
-        """Assign 'score' based on whether current player 
+    def _getScore(self):
+        """Get 'score' based on whether current player 
         (self.player) is winner, loser or neither"""
-        if winner == self.player:
-            return +1
-        if winner is None:
-            return 0
-        return -1
+        score = 0
+        if self.board.winner == self.player:
+            score = 1
+        elif self.board.winner == enum.opponent[self.player]:
+            score = -1
+        return score
 
-    def _evaluateMove(self, move, player):
-        """Evaluate given move made by a given player.
-        This is a recursive procedure - it evaluates given move based on
-        outcomes of all possible subsequent outcomes (moves) of both players
-        """
-        row = move[0]
-        col = move[1]
+    def _maximizedMove(self):
+        ''' Find maximized move'''
+            
+        bestscore = None
+        bestmove = None
         
-        try:
-            self.board.updateData(row, col, player, updateBoard = False, sendNotifications = False)
+        for move in self.board.getValidMoves():
+            (row, col) = move
+            self.board.updateData(row, col, self.player, updateBoard = False, sendNotifications = False)
+            
             if self.board.gameOver(False):
-                return self._judge(self.board.winner)
-            # Recursively, obtain a "score" - a value of a given move
-            outcomes = (self._evaluateMove(next_move, enum.opponent[player]) for next_move in self.board.getValidMoves())
-            if player == self.player:
-                # return min(outcomes)
-                min_element = 1
-                for o in outcomes:
-                    if o == -1:
-                        return o
-                    min_element = min(o, min_element)
-                return min_element
+                score = self._getScore()
             else:
-                # return max(outcomes)
-                max_element = -1
-                for outcome in outcomes:
-                    if outcome == +1:
-                        return outcome
-                    max_element = max(outcome, max_element)
-                return max_element
-        finally:
+                next_move, score = self._minimizedMove()
+       
+            self.scores[move] = score
             self.board.undoMove(row, col)
+           
+            if bestscore == None or score > bestscore:
+                bestscore = score
+                bestmove = move
+
+        return bestmove, bestscore
     
+    def _minimizedMove(self):
+        ''' Find the minimized move'''
+
+        bestscore = None
+        bestmove = None
+
+        for move in self.board.getValidMoves():
+            (row, col) = move
+            self.board.updateData(row, col, enum.opponent[self.player], updateBoard = False, sendNotifications = False)
+
+            if self.board.gameOver(False):
+                score = self._getScore()
+            else:
+                next_move, score = self._maximizedMove()
+       
+            self.board.undoMove(row, col)
+           
+            if bestscore == None or score < bestscore:
+                bestscore = score
+                bestmove = move
+
+        return bestmove, bestscore
+
     def _firstMove(self):
         "Consider that center - is always best first move"
         if self.board.isBlank():
-            return (self.board.center, None)
+            return self.board.center
         else:
             raise Exception, "Game board is not blank"
         
@@ -84,33 +102,23 @@ class Assistant(object):
                         col = item % 3
                         if not self.board.data[row][col]:
                             # We found item that will either give us a win, or protect from loss
-                            return ((row, col), None)
+                            return (row, col)
                         
         raise Exception, "No immediate win/loss opportunity"
     
-    def _minMax(self):
-        """A MinMax algorithm implementation - a sort-of 'brute force' computation algorithm
-        that evaluates every possible move (for both players) and tries to select the best choice
-        based on the all possible outcomes
-        """
-        # Obtain a list of all possible (move, score) pairs
-        moves = [(move, self._evaluateMove(move, self.player)) for move in self.board.getValidMoves()]
-        # Randomly shuffle results
-        random.shuffle(moves)
-        # Sort results in reverse score order
-        moves.sort(key = lambda (move, score): score)
-        # Return first best move
-        return(moves[-1][0], moves)
+    def _maxiMin(self):
+        self.scores = {}
+        (bestMove, bestScore) = self._maximizedMove()
+        return bestMove
     
     def _randomChoice(self, data):
         "Obtain a random move from the list of all possible available moves"
         avail = self.board.getValidMoves()
-        return (avail[random.randrange(len(avail))], None)
+        return avail[random.randrange(len(avail))]
     
     def suggestMove(self):
         for strategy in self.strategyList:
             try:
-                (move, other) = strategy()
-                return move
+                return strategy()
             except:
                 pass

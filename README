@@ -52,3 +52,14 @@ anticipated - I have not done some of the things that I would normally do on all
 I consider myself being very good both with unittest'ing (I am fluent using both Mocks and Stubs), 
 and with documentation. Please take my word for it.
 
+08/03/2001 NOTICE
+------------------
+I noticed that initial implementation of MiniMax algorithm (originally implemented as _minMax() 
+and _evaluateMove() methods of Assistant class within assistant.py) was not perfect. I have
+improved this implementation - making a clear separation of maximizing and minimizing the scores.
+New implementation consists of _maxiMin(), _maximizedMove() and _minimizedMove() methods.
+Some other minor changes are made to Assistant class at the same time - which are purely cosmetic
+changes having no effect on the implementation.
+
+assistant_test.py unittest module is also updated to reflect latest code changes
+
