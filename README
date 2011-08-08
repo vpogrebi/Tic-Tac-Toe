@@ -63,3 +63,26 @@ changes having no effect on the implementation.
 
 assistant_test.py unittest module is also updated to reflect latest code changes
 
+
+PREREQUISITES
+-------------
+
+1. Download and install 'pureMVS' framework (http://puremvc.org/component/option,com_wrapper/Itemid,168/)
+2. Download and Install 'wxPython' (http://www.wxpython.org/download.php)
+
+RUN INSTRUCTIONS
+----------------
+
+'tictactoe.py' (originally 'main.py') - is the main module that starts the game. To start the game
+from shell:
+
+	"python <path>/src/tictactoe.py", or simply "<path>/src/tictactoe.py" (I made script to be an executable)
+	
+To play the game:
+
+	1. Select the role: 'X' or 'O'
+	2. Start the game: click on 'Start Game'
+	3. Whenever it is your turn ('X' has first move) - click (left-click) on the chosen board position
+	4. To restart the game (while game is incomplete) - click 'Stop Game' and then 'Start Game' again
+	5. Good luck!
+	 

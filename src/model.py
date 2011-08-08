@@ -1,10 +1,10 @@
 import puremvc.patterns.proxy
 
 import copy
-import main
 import enum
 import player
 import assistant
+import tictactoe
 
 class PlayerProxy(puremvc.patterns.proxy.Proxy):
 	"""PlayerProxy class defines functionality responsible for "managing"
@@ -77,7 +77,7 @@ class PlayerProxy(puremvc.patterns.proxy.Proxy):
 				# Signal player to take turn
 				(row, col) = self._dataProxy.suggestMove()
 				# Send notification that auto-player made move
-				self.sendNotification(main.AppFacade.AUTO_MOVE_MADE, (row, col, self.currPlayer.role))
+				self.sendNotification(tictactoe.AppFacade.AUTO_MOVE_MADE, (row, col, self.currPlayer.role))
 			
 	def disableCurrentPlayer(self):
 		"Disable current player's actions"
@@ -154,7 +154,7 @@ class GameBoardProxy(puremvc.patterns.proxy.Proxy):
 			if not self.gameOver():
 				# Check if we have a draw
 				if self.getValidMoves() == []:
-					self.sendNotification(main.AppFacade.GAME_DRAW)
+					self.sendNotification(tictactoe.AppFacade.GAME_DRAW)
 					
 	def undoMove(self, row, col):
 		"Undo a move. This method is used by the assistant to undo its 'simulation' moves"
@@ -176,7 +176,7 @@ class GameBoardProxy(puremvc.patterns.proxy.Proxy):
 				if cnt == 3:
 					self.winner = value
 					if sendNotification:
-						self.sendNotification(main.AppFacade.GAME_OVER, value)
+						self.sendNotification(tictactoe.AppFacade.GAME_OVER, value)
 					return True
 			
 	def getValidMoves(self):

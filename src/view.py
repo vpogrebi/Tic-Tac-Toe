@@ -2,7 +2,7 @@ import wx
 import puremvc.interfaces
 import puremvc.patterns.mediator
 
-import main
+import tictactoe
 import model
 
 class DialogMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.IMediator):
@@ -15,17 +15,17 @@ class DialogMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.IMed
 
 	def listNotificationInterests(self):
 		return [
-			main.AppFacade.SHOW_GAME_OVER,
-			main.AppFacade.SHOW_GAME_DRAW,
+			tictactoe.AppFacade.SHOW_GAME_OVER,
+			tictactoe.AppFacade.SHOW_GAME_DRAW,
 		]
 
 	def handleNotification(self, note): 
 		noteName = note.getName()
-		if noteName == main.AppFacade.SHOW_GAME_OVER:
+		if noteName == tictactoe.AppFacade.SHOW_GAME_OVER:
 			dlg = wx.MessageDialog(self.viewComponent, note.getBody(), 'GAME OVER', style = wx.OK)
 			result = dlg.ShowModal()
 			dlg.Destroy()
-		if noteName == main.AppFacade.SHOW_GAME_DRAW:
+		if noteName == tictactoe.AppFacade.SHOW_GAME_DRAW:
 			dlg = wx.MessageDialog(self.viewComponent, note.getBody(), 'DRAW', style = wx.OK)
 			result = dlg.ShowModal()
 			dlg.Destroy()
@@ -53,22 +53,22 @@ class GameBoardMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.I
 	def listNotificationInterests(self):
 		"Subscribe to notifications"
 		return [
-			main.AppFacade.GAME_OVER,
-			main.AppFacade.GAME_DRAW,
-			main.AppFacade.AUTO_MOVE_MADE,
+			tictactoe.AppFacade.GAME_OVER,
+			tictactoe.AppFacade.GAME_DRAW,
+			tictactoe.AppFacade.AUTO_MOVE_MADE,
 		]
 
 	def handleNotification(self, note):
 		"Notification handler. Handles GAME_OVER, GAME_DRAW and AUTO_MOVE_MADE notifications"
 		noteName = note.getName()
-		if noteName == main.AppFacade.AUTO_MOVE_MADE:
+		if noteName == tictactoe.AppFacade.AUTO_MOVE_MADE:
 			(row, col, value) = note.getBody()
 			self.gameDataProxy.updateData(row, col, value)
 			self.onPlayerMoved(None)
-		if noteName == main.AppFacade.GAME_OVER:
+		if noteName == tictactoe.AppFacade.GAME_OVER:
 			winner = note.getBody()
 			self.onGameOver(winner)	
-		elif noteName == main.AppFacade.GAME_DRAW:
+		elif noteName == tictactoe.AppFacade.GAME_DRAW:
 			self.onGameDraw()	
 			
 	def onGameStart(self, evt):
@@ -90,13 +90,13 @@ class GameBoardMediator(puremvc.patterns.mediator.Mediator, puremvc.interfaces.I
 	def onGameOver(self, winner):
 		"Game is over - someone won"
 		self.playerProxy.stopGame()
-		self.sendNotification(main.AppFacade.SHOW_GAME_OVER, "'%s' IS A WINNER" % winner)
+		self.sendNotification(tictactoe.AppFacade.SHOW_GAME_OVER, "'%s' IS A WINNER" % winner)
 		self.onGameStop(None)
 	
 	def onGameDraw(self):
 		"Game is over - there is a DRAW"
 		self.playerProxy.stopGame()
-		self.sendNotification(main.AppFacade.SHOW_GAME_DRAW, "WE HAVE A DRAW")
+		self.sendNotification(tictactoe.AppFacade.SHOW_GAME_DRAW, "WE HAVE A DRAW")
 		self.onGameStop(None)
 	
 	def onPlayerMoved(self, evt):
